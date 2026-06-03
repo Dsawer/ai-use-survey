@@ -1,0 +1,17 @@
+# Playwright / scratch
+.playwright-mcp/
+_*.png
+_eval*.json
+docs/_build_status.txt
+
+# Python
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Unrelated files that happen to live in this folder (not part of the survey)
+*.pptx
+_*.txt
