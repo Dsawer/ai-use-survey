@@ -30,8 +30,8 @@ Goal: each person answers **once** (no second submission), responses are **anony
 ## Step 2 — Apps Script (token + email + storage)
 1. Open the linked **Google Sheet** → **Extensions → Apps Script**.
 2. Delete the default code and paste **`apps_script.gs`** below.
-3. Set `SITE_URL` to your published page, e.g.
-   `https://<username>.github.io/<repo>/index.html`.
+3. `SITE_URL` is already set to `https://dsawer.github.io/ai-use-survey/index.html` (this project's
+   published page). Only change it if you rename the repo or use a custom domain.
 4. **Triggers** (clock icon) → **Add Trigger** → choose `onFormSubmit`, event source **From
    spreadsheet**, event type **On form submit** → save (authorize when asked; allow Mail + Sheets).
 5. **Deploy → New deployment → Web app**:
@@ -62,8 +62,8 @@ Goal: each person answers **once** (no second submission), responses are **anony
 
 ## apps_script.gs
 ```js
-// Personal survey link page (set to your published page)
-var SITE_URL = 'https://USERNAME.github.io/REPO/index.html';
+// Personal survey link page (already set to this project's published GitHub Pages URL)
+var SITE_URL = 'https://dsawer.github.io/ai-use-survey/index.html';
 var TOKENS_SHEET = 'Tokens';
 var RESPONSES_SHEET = 'Responses';
 
