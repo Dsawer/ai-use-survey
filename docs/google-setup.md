@@ -68,14 +68,17 @@ function deviceSeen_(d) {
 }
 
 // Confirm a submission / device-lock check (site calls via JSONP). Returns ONLY a boolean, never data.
+// NOTE: doGet/doPost are called by the web app, not by the editor's Run button. The `e = e || {}`
+// guards just stop a harmless TypeError if you accidentally press Run here.
 function doGet(e) {
-  var cb = e.parameter.callback;
-  if (e.parameter.action === 'check') return out_({ recorded: deviceSeen_(e.parameter.d) }, cb);
-  return out_({ ok: true }, cb);
+  e = e || {}; var p = e.parameter || {};
+  if (p.action === 'check') return out_({ recorded: deviceSeen_(p.d) }, p.callback);
+  return out_({ ok: true }, p.callback);
 }
 
 // Receive answers (site POSTs). One row per device id; a repeat device id is ignored (idempotent).
 function doPost(e) {
+  e = e || {};
   var lock = LockService.getScriptLock();
   try { lock.waitLock(20000); } catch (err) { return out_({ ok: false, reason: 'busy' }); }
   try {

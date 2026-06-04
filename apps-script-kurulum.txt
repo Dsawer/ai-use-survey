@@ -1,0 +1,155 @@
+==========================================================================
+  GOOGLE E-TABLO'YA CEVAP TOPLAMA — KURULUM (adim adim)
+  Anket: https://dsawer.github.io/ai-use-survey/
+==========================================================================
+
+Bu dosya: (1) ne yapacagini adim adim, (2) Apps Script'e yapistiracagin kodu icerir.
+Tum adimlar SENIN Google hesabinda, tarayicida. Kodu ben hazirladim; sana sadece
+tiklamalar kaldi. En sonda bana 1 URL veriyorsun, gerisini ben baglayacagim.
+
+--------------------------------------------------------------------------
+NOT: Yolda gorebilecegin 2 sey (ikisi de NORMAL)
+--------------------------------------------------------------------------
+1) "Google bu uygulamayi dogrulamadi" uyarisi:
+   - Kisisel Apps Script'lerde HER ZAMAN cikar. Kendi yazdigin, kendi tablona
+     yazan script oldugu icin guvenli.
+   - Yap: "Gelismis Ayarlar (Advanced)" -> "Adsiz proje uygulamasina git
+     (guvenli degil)" -> sonraki ekranda "Izin ver (Allow)".
+
+2) "TypeError: Cannot read properties of undefined (reading 'parameter')":
+   - Bu, editorde doGet/doPost'a ▶ Run bastiginda cikar. Bu fonksiyonlar ELLE
+     calistirilmaz; sadece web'den cagrilinca calisir.
+   - YOK SAY. (Asagidaki kod, elle Run'da bile artik hata vermez.)
+   - Yani editorde HICBIR fonksiyona Run basmana gerek yok.
+
+==========================================================================
+  ADIMLAR
+==========================================================================
+
+ADIM 1 — E-Tablo olustur
+  - Tarayicida ac: https://sheets.new
+  - Bos tablo acilir. Adini ver (or. "AI Survey Responses").
+  - Bu tabloyu KIMSEYLE PAYLASMA. Cevaplari yalnizca sen goreceksin.
+
+ADIM 2 — Apps Script'i ac
+  - Ayni tabloda ust menu: Uzantilar (Extensions) -> Apps Script.
+  - Yeni sekme acilir; icinde bos "Code.gs" / "function myFunction() {}" olur.
+
+ADIM 3 — Kodu yapistir
+  - Editordeki HER SEYI sil.
+  - Asagidaki "KOD BASLANGICI" ile "KOD SONU" arasindaki her seyi kopyalayip
+    yapistir.
+  - Kaydet: ust taraftaki diskette ikonu ya da Ctrl+S.
+  - (Editorde Run'a BASMA — gerek yok.)
+
+ADIM 4 — Web App olarak dagit (Deploy)
+  - Sag ustte mavi "Deploy" -> "New deployment".
+  - "Select type" yanindaki disli (gear) -> "Web app" sec.
+  - Ayarlar:
+      Description : istedigin (or. survey collector)
+      Execute as  : Me   (kendi hesabin)
+      Who has access : Anyone     <-- ONEMLI (gonderebilsinler; OKUYAMAZLAR)
+  - "Deploy" tikla.
+
+ADIM 5 — Izin ver
+  - "Authorize access" -> hesabini sec.
+  - "Google bu uygulamayi dogrulamadi" cikarsa:
+      Gelismis (Advanced) -> "Adsiz proje uygulamasina git (guvenli degil)"
+      -> Izin ver (Allow).
+  - (Sadece kendi E-Tablona erisim ister; guvenli.)
+
+ADIM 6 — URL'yi kopyala
+  - Acilan kutuda "Web app URL" cikar:
+      https://script.google.com/macros/s/........./exec
+  - Bu URL'yi KOPYALA.
+  - (Sonra tekrar bulmak istersen: Deploy -> Manage deployments.)
+
+ADIM 7 — URL'yi bana ver
+  - O /exec URL'sini sohbete yapistir. Ben:
+      * assets/js/config.js -> webAppUrl'e yazarim
+      * index.html cache surumunu yukseltirim
+      * GitHub'a push ederim
+  - ~1 dk sonra anket cevaplari senin E-Tablona dusmeye baslar.
+
+==========================================================================
+  TEST (URL baglandiktan sonra)
+==========================================================================
+  1) https://dsawer.github.io/ai-use-survey/ ac -> anketi doldur -> Submit
+     -> "Your response has been recorded" gormelisin.
+  2) E-Tablona bak -> "Responses" sayfasinda yeni satir (timestamp, device, payload).
+  3) Ayni tarayicida anketi tekrar ac -> "You have already responded" (cihaz kilidi).
+
+==========================================================================
+  KOD  (Apps Script'e yapistir)
+==========================================================================
+----- KOD BASLANGICI (bu satirin altindan kopyala) -----
+var RESPONSES_SHEET = 'Responses';
+
+function ss_() { return SpreadsheetApp.getActiveSpreadsheet(); }
+function sheet_(name) { var s = ss_().getSheetByName(name); if (!s) s = ss_().insertSheet(name); return s; }
+function out_(obj, cb) {
+  var s = JSON.stringify(obj);
+  return cb ? ContentService.createTextOutput(cb + '(' + s + ')').setMimeType(ContentService.MimeType.JAVASCRIPT)
+            : ContentService.createTextOutput(s).setMimeType(ContentService.MimeType.JSON);
+}
+function deviceSeen_(d) {
+  if (!d) return false;
+  var data = sheet_(RESPONSES_SHEET).getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) if (String(data[i][1]) === String(d)) return true;
+  return false;
+}
+
+// Web'den cagrilir (editorde Run'a basma). e = e || {} elle calistirmada hatayi onler.
+function doGet(e) {
+  e = e || {}; var p = e.parameter || {};
+  if (p.action === 'check') return out_({ recorded: deviceSeen_(p.d) }, p.callback);
+  return out_({ ok: true }, p.callback);
+}
+
+function doPost(e) {
+  e = e || {};
+  var lock = LockService.getScriptLock();
+  try { lock.waitLock(20000); } catch (err) { return out_({ ok: false, reason: 'busy' }); }
+  try {
+    var body = JSON.parse((e.postData && e.postData.contents) || '{}');
+    var rs = sheet_(RESPONSES_SHEET);
+    if (rs.getLastRow() === 0) rs.appendRow(['timestamp', 'device', 'payload']);
+    if (deviceSeen_(body.d)) return out_({ ok: true, dup: true });
+    rs.appendRow([new Date(), body.d || '', JSON.stringify(body.payload)]);
+    return out_({ ok: true });
+  } finally { lock.releaseLock(); }
+}
+----- KOD SONU (bu satirin ustune kadar kopyala) -----
+
+==========================================================================
+  ISTEGE BAGLI: JSON'u sutunlara ac (analiz icin)
+==========================================================================
+  Yukaridaki kodun ALTINA su fonksiyonu da yapistirip, ust menuden
+  Run -> flatten dersen, cevaplari tek tek satira acan bir "Flat" sayfasi olusur.
+
+----- (istege bagli) flatten — KOD BASLANGICI -----
+function flatten() {
+  var rs = sheet_(RESPONSES_SHEET);
+  var data = rs.getDataRange().getValues();
+  var out = sheet_('Flat'); out.clear();
+  var bgIds = [], rows = [];
+  for (var i = 1; i < data.length; i++) {
+    var ts = data[i][0], dev = data[i][1], payload;
+    try { payload = JSON.parse(data[i][2]); } catch (e) { continue; }
+    var bg = payload.background || {};
+    Object.keys(bg).forEach(function (k) { if (bgIds.indexOf(k) < 0) bgIds.push(k); });
+    (payload.sections || []).forEach(function (sec) {
+      (sec.responses || []).forEach(function (r) { rows.push({ ts: ts, dev: dev, bg: bg, sec: sec.section, r: r }); });
+    });
+  }
+  var header = ['timestamp', 'device'].concat(bgIds.map(function (k) { return 'bg:' + k; }))
+    .concat(['section', 'sub_area', 'construct', 'code', 'question', 'uses_ai', 'tools', 'value', 'label']);
+  var table = [header];
+  rows.forEach(function (x) {
+    var lead = [x.ts, x.dev].concat(bgIds.map(function (k) { return x.bg[k] ? x.bg[k].answer : ''; }));
+    var tools = (x.r.tools || []).map(function (t, i) { return (i + 1) + ') ' + t; }).join('; ');
+    table.push(lead.concat([x.sec, x.r.sub_area, x.r.construct, x.r.code, x.r.question, x.r.uses_ai, tools, x.r.value, x.r.label]));
+  });
+  if (table.length > 1) out.getRange(1, 1, table.length, header.length).setValues(table);
+}
+----- (istege bagli) flatten — KOD SONU -----
