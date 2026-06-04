@@ -1,149 +1,102 @@
-# Unique, anonymous responses with Google Form + Apps Script
+# Collect responses in a private Google Sheet (no server, per-device lock)
 
-Goal: each person answers **once** (no second submission), responses are **anonymous**
-(no email stored with answers), and everything lands in a **Google Sheet**. No server.
+Goal: every response is saved to **your** Google Sheet, **only you can read them**, and the **same
+device cannot submit/enter twice**. No server to run, no Google Form, no email, no login.
 
 ## How it works
-1. A **Google Form** is the entry gate. It **collects email** and is set to **limit 1 response**
-   (so Google enforces one entry per Google account).
-2. When someone submits that Form, an **Apps Script** trigger creates a **one time token** and
-   **emails them a personal link**: `https://<your-site>/index.html?t=TOKEN`.
-3. They open that link, fill in the survey on our site, and press **Submit**. The site sends the
-   answers to the Apps Script, which:
-   - rejects the token if it was already used (no second submission),
-   - otherwise writes the answers to the **Responses** sheet (token only, **no email**) and marks
-     the token as used.
-4. The email lives only in the gate Form's own responses (kept separately by you). The answer data
-   in the Responses sheet is anonymous (token only). Keep the two unlinked.
+1. The static site (GitHub Pages) collects the answers and, on **Submit**, POSTs them to a free,
+   Google-hosted **Apps Script Web App**, tagged with a random **device id** (stored in the
+   participant's browser).
+2. The Web App appends one row to your **Responses** sheet (`timestamp, device, payload`). It is
+   **idempotent**: a repeat of the same device id is ignored, so retries never double-record.
+3. **Privacy:** the Sheet is owned by you and is **private** — only you can open it. The Web App is
+   deployed "Who has access: Anyone", which only lets people **submit**; it never returns response
+   data (its only GET reply is a yes/no used to confirm a submission and lock the device).
+4. **Per-device lock:** after a successful submit the site marks the browser as done; reopening the
+   survey on that device shows "You have already responded." (This is a device/browser-level
+   deterrent: a different device, a different browser, a private window, or clearing site data can
+   still submit again — there is no way to harden this further without identifying people.)
 
 ---
 
-## Step 1 — Google Form (the gate)
-1. Create a Google Form, e.g. "AI Use Survey — Access".
-2. Settings → **Responses** → turn on **Collect email addresses** (Verified).
-3. Settings → **Responses** → **Limit to 1 response** (this requires Google sign in).
-4. Add one short item, e.g. a consent checkbox ("I agree to take part"). Keep it minimal.
-5. **Presentation → Confirmation message:**
-   *"Thank you. We have emailed you a personal link to the survey. Please open it to continue."*
-6. Link the form to a spreadsheet: **Responses → Link to Sheets** → create a new spreadsheet.
+## Step 1 — Make the Sheet
+1. Create a new **Google Sheet** (this is where responses land; keep it private to you).
 
-## Step 2 — Apps Script (token + email + storage)
-1. Open the linked **Google Sheet** → **Extensions → Apps Script**.
-2. Delete the default code and paste **`apps_script.gs`** below.
-3. `SITE_URL` is already set to `https://dsawer.github.io/ai-use-survey/index.html` (this project's
-   published page). Only change it if you rename the repo or use a custom domain.
-4. **Triggers** (clock icon) → **Add Trigger** → choose `onFormSubmit`, event source **From
-   spreadsheet**, event type **On form submit** → save (authorize when asked; allow Mail + Sheets).
-5. **Deploy → New deployment → Web app**:
+## Step 2 — Apps Script
+1. In the Sheet: **Extensions → Apps Script**.
+2. Delete the default code, paste **`apps_script.gs`** (below), **Save**.
+3. **Deploy → New deployment → Web app**:
    - Execute as: **Me**
    - Who has access: **Anyone**
-   - Deploy, copy the **Web app URL** (ends with `/exec`).
+   - Deploy (authorize when asked — only Sheets access is needed), copy the **Web app URL**
+     (ends with `/exec`).
 
 ## Step 3 — Connect the site
-1. Open `assets/js/config.js` and paste the Web app URL:
+1. Open `assets/js/config.js` and paste the URL (leave `requireToken` as `false`):
    ```js
-   window.SURVEY_CONFIG = { webAppUrl: "https://script.google.com/macros/s/XXXX/exec", requireToken: true };
+   window.SURVEY_CONFIG = { webAppUrl: "https://script.google.com/macros/s/XXXX/exec", requireToken: false };
    ```
-2. Bump the cache version in `index.html` (the `?v=` on the script/style links) so visitors get the
-   new file, then push to GitHub Pages.
+2. Bump the cache version in `index.html` (the `?v=` on the four links) and push to GitHub Pages.
 
 ## Test it
-- Submit the Google Form with your own email → you should receive the link email.
-- Open the link → fill the survey → **Submit** → "Your response has been recorded".
-- Open the same link again → "You have already responded" (blocked).
-- Open the site without `?t=` → "Please use your personal link".
+- Open the live site, complete it, press **Submit** → "Your response has been recorded", and a new
+  row appears in your **Responses** sheet.
+- Reopen the survey on the same browser → "You have already responded" (device locked).
+- `webAppUrl` empty = local preview mode (the site offers JSON/CSV download instead of submitting).
 
-> Note: the site sends answers with `no-cors` (it cannot read Google's reply directly), so after
-> sending it re-checks the token status to confirm. Uniqueness is enforced **server side** by the
-> script (it refuses an already used token), so a cleared browser or another device cannot get a
-> second response in.
+> The site sends answers with `no-cors` (it cannot read Google's reply directly), then re-checks via
+> a JSONP call that the row landed before showing success.
 
 ---
 
 ## apps_script.gs
 ```js
-// Personal survey link page (already set to this project's published GitHub Pages URL)
-var SITE_URL = 'https://dsawer.github.io/ai-use-survey/index.html';
-var TOKENS_SHEET = 'Tokens';
 var RESPONSES_SHEET = 'Responses';
 
 function ss_() { return SpreadsheetApp.getActiveSpreadsheet(); }
 function sheet_(name) { var s = ss_().getSheetByName(name); if (!s) s = ss_().insertSheet(name); return s; }
-
-// Runs when the gate Form is submitted: make a token and email the personal link.
-function onFormSubmit(e) {
-  var email = '';
-  try { email = e.response.getRespondentEmail(); } catch (err) {}
-  if (!email && e.namedValues) {
-    var k = Object.keys(e.namedValues).filter(function (x) { return /e.?mail/i.test(x); })[0];
-    if (k) email = e.namedValues[k][0];
-  }
-  if (!email) return;
-  var token = Utilities.getUuid().replace(/-/g, '').slice(0, 20);
-  var tk = sheet_(TOKENS_SHEET);
-  // Anonymity: we deliberately DO NOT store the token creation time, so a token can never be
-  // correlated with the gate Form's submission timestamp (the email lives only in the Form's own
-  // responses). The Tokens sheet holds token + status (+ recordedAt) only, never the email.
-  if (tk.getLastRow() === 0) tk.appendRow(['token', 'status', 'recordedAt']);
-  tk.appendRow([token, 'pending', '']);
-  var link = SITE_URL + '?t=' + token;
-  MailApp.sendEmail(email, 'Your survey link',
-    'Thank you for taking part.\n\nOpen your personal survey link to continue:\n' + link +
-    '\n\nThis link works once.');
-}
-
-function findToken_(token) {
-  var tk = sheet_(TOKENS_SHEET); var data = tk.getDataRange().getValues();
-  for (var i = 1; i < data.length; i++) if (String(data[i][0]) === String(token)) return { row: i + 1, status: data[i][1] };
-  return null;
-}
-function out_(obj, callback) {
+function out_(obj, cb) {
   var s = JSON.stringify(obj);
-  if (callback) return ContentService.createTextOutput(callback + '(' + s + ')').setMimeType(ContentService.MimeType.JAVASCRIPT);
-  return ContentService.createTextOutput(s).setMimeType(ContentService.MimeType.JSON);
+  return cb ? ContentService.createTextOutput(cb + '(' + s + ')').setMimeType(ContentService.MimeType.JAVASCRIPT)
+            : ContentService.createTextOutput(s).setMimeType(ContentService.MimeType.JSON);
+}
+function deviceSeen_(d) {
+  if (!d) return false;
+  var data = sheet_(RESPONSES_SHEET).getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) if (String(data[i][1]) === String(d)) return true;
+  return false;
 }
 
-// Validate a token (called by the site via JSONP).
+// Confirm a submission / device-lock check (site calls via JSONP). Returns ONLY a boolean, never data.
 function doGet(e) {
   var cb = e.parameter.callback;
-  if (e.parameter.action === 'validate') {
-    var f = findToken_(e.parameter.t);
-    var status = f ? (f.status === 'recorded' ? 'recorded' : 'pending') : 'invalid';
-    return out_({ status: status }, cb);
-  }
+  if (e.parameter.action === 'check') return out_({ recorded: deviceSeen_(e.parameter.d) }, cb);
   return out_({ ok: true }, cb);
 }
 
-// Receive the answers (called by the site via POST). Rejects an already used token.
+// Receive answers (site POSTs). One row per device id; a repeat device id is ignored (idempotent).
 function doPost(e) {
   var lock = LockService.getScriptLock();
   try { lock.waitLock(20000); } catch (err) { return out_({ ok: false, reason: 'busy' }); }
   try {
     var body = JSON.parse((e.postData && e.postData.contents) || '{}');
-    var f = findToken_(body.t);
-    if (!f) return out_({ ok: false, reason: 'invalid' });
-    if (f.status === 'recorded') return out_({ ok: false, reason: 'used' });
     var rs = sheet_(RESPONSES_SHEET);
-    if (rs.getLastRow() === 0) rs.appendRow(['timestamp', 'token', 'payload']);
-    rs.appendRow([new Date(), body.t, JSON.stringify(body.payload)]);
-    var tk = sheet_(TOKENS_SHEET);
-    tk.getRange(f.row, 2).setValue('recorded');
-    tk.getRange(f.row, 3).setValue(new Date());
+    if (rs.getLastRow() === 0) rs.appendRow(['timestamp', 'device', 'payload']);
+    if (deviceSeen_(body.d)) return out_({ ok: true, dup: true });
+    rs.appendRow([new Date(), body.d || '', JSON.stringify(body.payload)]);
     return out_({ ok: true });
   } finally { lock.releaseLock(); }
 }
 ```
 
-> The **Responses** sheet stores `timestamp, token, payload` (payload = the full answers as JSON,
-> no email). The `timestamp` here is the survey **submission** time, which is not linkable to a
-> person (the gate Form's email + time live in a separate sheet, and the Tokens sheet no longer
-> stores the token creation time). To analyse, add the `flatten` helper below and run it.
+> The **Responses** sheet stores `timestamp, device, payload` (payload = the full answers as JSON).
+> The `device` value is a random per-browser id (not a name, email, or IP). To analyse, add the
+> `flatten` helper below and run it.
 
 ## Optional: expand the JSON into one row per rating (`flatten`)
 
-Paste this into the same Apps Script project, then **Run → flatten** whenever you want an analysis
-table. It reads the `Responses` sheet and writes a `Flat` sheet: one row per rated statement, with
-the background answers repeated as leading columns (same shape as the site's CSV export).
+Paste this into the same project, then **Run → flatten** to build a `Flat` sheet: one row per rated
+statement, with the background answers repeated as leading columns (same shape as the site's CSV).
 
 ```js
 function flatten() {
@@ -152,19 +105,19 @@ function flatten() {
   var out = sheet_('Flat'); out.clear();
   var bgIds = [], rows = [];
   for (var i = 1; i < data.length; i++) {
-    var ts = data[i][0], token = data[i][1], payload;
+    var ts = data[i][0], dev = data[i][1], payload;
     try { payload = JSON.parse(data[i][2]); } catch (e) { continue; }
     var bg = payload.background || {};
     Object.keys(bg).forEach(function (k) { if (bgIds.indexOf(k) < 0) bgIds.push(k); });
     (payload.sections || []).forEach(function (sec) {
-      (sec.responses || []).forEach(function (r) { rows.push({ ts: ts, token: token, bg: bg, sec: sec.section, r: r }); });
+      (sec.responses || []).forEach(function (r) { rows.push({ ts: ts, dev: dev, bg: bg, sec: sec.section, r: r }); });
     });
   }
-  var header = ['timestamp', 'token'].concat(bgIds.map(function (k) { return 'bg:' + k; }))
+  var header = ['timestamp', 'device'].concat(bgIds.map(function (k) { return 'bg:' + k; }))
     .concat(['section', 'sub_area', 'construct', 'code', 'question', 'uses_ai', 'tools', 'value', 'label']);
   var table = [header];
   rows.forEach(function (x) {
-    var lead = [x.ts, x.token].concat(bgIds.map(function (k) { return x.bg[k] ? x.bg[k].answer : ''; }));
+    var lead = [x.ts, x.dev].concat(bgIds.map(function (k) { return x.bg[k] ? x.bg[k].answer : ''; }));
     var tools = (x.r.tools || []).map(function (t, i) { return (i + 1) + ') ' + t; }).join('; ');
     table.push(lead.concat([x.sec, x.r.sub_area, x.r.construct, x.r.code, x.r.question, x.r.uses_ai, tools, x.r.value, x.r.label]));
   });

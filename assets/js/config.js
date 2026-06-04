@@ -11,5 +11,5 @@
    ============================================================ */
 window.SURVEY_CONFIG = {
   webAppUrl: "",        // paste your Apps Script Web App URL here, e.g. "https://script.google.com/macros/s/AKfycb..../exec"
-  requireToken: true    // when webAppUrl is set, require a valid ?t= token (one response per person)
+  requireToken: false   // false = open collection to your private Google Sheet + per-device lock (no token/Form/email)
 };

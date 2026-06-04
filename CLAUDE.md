@@ -117,15 +117,24 @@ each response row carries its own `uses_ai`/`tools`, and the JSON adds a `subAre
 section. Only here do construct names/codes reappear; the CSV repeats every background answer as
 leading columns on each row.
 
-**Delivery (optional).** `assets/js/config.js` (`window.SURVEY_CONFIG`) selects the mode. Empty
-`webAppUrl` = open mode (JSON/CSV download). Set `webAppUrl` + `requireToken` to gate the survey
-behind a `?t=TOKEN` personal link validated against a Google Apps Script Web App: `gateCheck` /
-`validateToken` hold rendering until the token is confirmed (`GATED` / `ACCESS_OK`), and the Done
-page shows a one-time **Submit** (`submitResponses`) instead of downloads. See `docs/google-setup.md`.
+**Delivery.** `assets/js/config.js` (`window.SURVEY_CONFIG`) selects the mode by `webAppUrl` +
+`requireToken`. Three modes:
+- **Empty `webAppUrl`** = local mode: Done page offers JSON/CSV download (used for preview).
+- **`webAppUrl` set + `requireToken: false`** (the chosen production mode) = **open submit to a
+  private Google Sheet with a per-device lock**. `OPEN_SUBMIT` is true; the Done page shows a
+  **Submit** step (`submitOpen` POSTs `{d: deviceId, payload}` `no-cors`, then `checkOpen` confirms
+  via JSONP). A persistent `localStorage` device id + "done" flag block re-entry from the same
+  device (`deviceSubmitted`/`markDeviceSubmitted`/`showDeviceBlocked`, guarded in `render`/`init`).
+  The Apps Script appends to the owner's private Sheet and never returns response data.
+- **`webAppUrl` set + `requireToken: true`** = legacy token gate (`gateCheck`/`validateToken`/
+  `submitResponses`, `GATED`/`ACCESS_OK`) for a `?t=TOKEN` personal-link flow; still present but not
+  the chosen mode.
+See `docs/google-setup.md` for the open-mode Apps Script + setup. Deployed at
+https://dsawer.github.io/ai-use-survey/ (repo Dsawer/ai-use-survey, Pages from main).
 
 ## Cache busting
 
-`index.html` references the CSS/JS with a `?v=N` query (currently `?v=20`). After editing any file
+`index.html` references the CSS/JS with a `?v=N` query (currently `?v=21`). After editing any file
 in `assets/`, **bump `N` on all four links in `index.html`** (config.js, data.js, app.js, styles.css)
 so GitHub Pages / browsers fetch the new version instead of a cached copy.
 

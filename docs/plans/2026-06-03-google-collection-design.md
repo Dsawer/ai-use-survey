@@ -1,56 +1,48 @@
-# Collect responses in Google — anonymous, one per person, no server
+# Collect responses in a private Google Sheet, with a per-device lock
 
-Date: 2026-06-03
+Date: 2026-06-03 (final decision 2026-06-04)
 
 ## Decision
 
-Keep the survey a fully static site published from GitHub Pages (transparent: all source, including
-the Apps Script, lives in the repo). Responses are collected in a **Google Sheet** via a free,
-Google-hosted **Apps Script Web App** (no server the researcher runs/maintains). One response per
-person and anonymity are both achieved via a small **gate Google Form + one-time token**.
+The survey stays a fully static GitHub Pages site. On **Submit**, answers are POSTed to a free,
+Google-hosted **Apps Script Web App** that appends them to the researcher's **private Google
+Sheet**. Responses are visible **only to the Sheet owner**. The **same device** cannot submit or
+re-enter twice.
 
-Rejected: pure static with no Google service (cannot collect centrally or enforce uniqueness);
-native Google Form for everything (loses the custom UI); Google Sign-In/OAuth on the site (stores a
-hashed identity, more setup, less anonymous than the token design).
+We deliberately dropped strict one-response-per-person: every server-side guarantee (email/token,
+Google sign-in, IP) was rejected by the user — email/token is bypassable with a new account,
+Google sign-in was unwanted, and IP both blocks legitimate students sharing a campus network and is
+itself personal data. So uniqueness is a **device-level deterrent**, not a hard guarantee, and the
+user accepted that.
 
-## Flow
+## How it works
 
-1. **Gate Google Form** (tiny, separate): Collect email (Verified) + **Limit to 1 response** →
-   Google enforces one entry per Google account. One consent item.
-2. **Apps Script `onFormSubmit`**: makes a random one-time token, **emails** the participant their
-   personal link `https://<site>/index.html?t=TOKEN`, and stores in the `Tokens` sheet **only**
-   `token, status` (no email, and now **no creation timestamp** — see Anonymity).
-3. Participant opens the link → fills the static survey → **Submit**. The site POSTs the answers to
-   the Web App (`no-cors`) and then confirms via a JSONP token-status check.
-4. **Apps Script `doPost`**: rejects an unknown/used token; otherwise appends `timestamp, token,
-   payload(JSON)` to `Responses` and marks the token `recorded`. Reuse is refused.
+- `assets/js/config.js`: `webAppUrl` (empty until deployed) + `requireToken: false`. With a URL set
+  and `requireToken:false` the app is in **open-submit** mode; empty URL = local download mode.
+- A persistent random **device id** is stored in the browser (`localStorage`). On Submit the site
+  POSTs `{ d: deviceId, payload }` (`no-cors`) to the Web App, then confirms via a JSONP
+  `?action=check&d=` call that the row landed.
+- Apps Script `doPost` appends `timestamp, device, payload(JSON)`; it is **idempotent** (a repeat of
+  the same device id is ignored). `doGet` returns only a boolean (`recorded`) — **never** response
+  data — so the Sheet stays private.
+- After a successful submit the site sets a "done" flag; reopening on that device shows
+  "You have already responded" (`showDeviceBlocked`, enforced in `render`). Bypassable by another
+  device/browser/incognito/cleared storage — accepted.
 
-## Anonymity
+## Privacy
 
-The answer rows carry only a random token, never email/name. The email exists only in the gate
-Form's own responses (a separate sheet the researcher controls / can delete after tokens are sent).
-The `Tokens` sheet no longer stores the token **creation time**, so a token cannot be correlated
-with the gate Form's submission timestamp. The `Responses` timestamp is the survey-submission time
-(later than the gate, low correlation).
+No name, email, IP, or Google identity is collected — only a random per-browser device id. The
+Sheet is owned by and private to the researcher; the Web App's "Anyone" access only allows
+submitting, not reading.
 
-## What is already built (client)
+## Client functions (app.js)
 
-`assets/js/app.js`: `gateCheck`/`validateToken`/`showGate` (hold rendering until `?t=` confirmed),
-`submitResponses` (POST `{t, payload}` where payload = `background()` + `buildExportSections()`),
-`renderDone` gated "Submit" step + one-time `localStorage` guard. `assets/js/config.js`:
-`webAppUrl` (empty until deployed) + `requireToken: true`. `GATED = webAppUrl && requireToken`.
+`OPEN_SUBMIT = webAppUrl && !requireToken`; `deviceId`/`deviceSubmitted`/`markDeviceSubmitted`;
+`submitOpen`/`checkOpen`; `showDeviceBlocked`; `render` and `init` guard on `DEVICE_BLOCKED`;
+`renderDone` adds the open "Ready to submit" step and hides downloads once recorded.
 
-When `webAppUrl` is empty the site stays in **open/local mode** (JSON/CSV download) for previewing.
+## Verified (browser, dummy URL)
 
-## This change
-
-`docs/google-setup.md`: `apps_script.gs` updated for anonymity (Tokens = `token, status,
-recordedAt`; no `createdAt`; `recordedAt` moved to column 3). Added an optional `flatten` helper
-that expands the JSON payloads into a `Flat` analysis sheet (one row per rated statement, mirroring
-the site's CSV). No app code changed; no cache bump needed until the user pastes `webAppUrl`.
-
-## Verified
-
-Gated mode (dummy `webAppUrl`, no `?t=`) blocks the survey with "Please use your personal link."
-Open mode (empty `webAppUrl`) shows the survey + JSON/CSV download. The end-to-end token success
-path requires the user's own deployed Web App (covered by the doc's "Test it" steps).
+Open mode shows "Ready to submit"; a failed confirm reverts the button (no false success); setting
+the done flag blocks re-entry with "You have already responded"; no code errors (only the expected
+404 from the dummy URL). End-to-end success needs the user's deployed Web App (docs/google-setup.md).

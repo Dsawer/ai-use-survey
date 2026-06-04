@@ -30,8 +30,23 @@
   var cueUpdate = null;                               // matrix horizontal-scroll cue updater (or null)
   var CFG = window.SURVEY_CONFIG || {};
   var GATED = !!(CFG.webAppUrl && CFG.requireToken !== false);
-  var TOKEN = null, ACCESS_OK = false, SUBMITTED = false;
+  var SUBMIT_URL = CFG.webAppUrl || "";
+  var OPEN_SUBMIT = !!SUBMIT_URL && !GATED;            // collect to a private Google Sheet, no token gate
+  var TOKEN = null, ACCESS_OK = false, SUBMITTED = false, DEVICE_BLOCKED = false;
   function submittedKey(t) { return "submitted::" + t; }
+  // device-level lock (open mode): a persistent random id + a "done on this device" flag
+  var DEVICE_KEY = "utaut_device_id", DONE_KEY = "utaut_submitted_v7";
+  function deviceId() {
+    var id; try { id = localStorage.getItem(DEVICE_KEY); } catch (e) {}
+    if (!id) {
+      id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID().replace(/-/g, "")
+        : (Date.now().toString(36) + Math.random().toString(36).slice(2, 12));
+      try { localStorage.setItem(DEVICE_KEY, id); } catch (e) {}
+    }
+    return id;
+  }
+  function deviceSubmitted() { try { return !!localStorage.getItem(DONE_KEY); } catch (e) { return false; } }
+  function markDeviceSubmitted() { try { localStorage.setItem(DONE_KEY, "1"); } catch (e) {} }
 
   // ---------- icons (inline SVG, no external dependency) ----------
   var ICONS = {
@@ -605,17 +620,39 @@
       v.appendChild(p1); topFocus(); return;
     }
 
-    // submitted (gated) or finished (open mode)
+    // finished + open collection configured + not yet sent from this device -> submit step
+    if (OPEN_SUBMIT && !deviceSubmitted()) {
+      var po = el("div", "page done");
+      po.appendChild(el("div", "check", "✓"));
+      po.appendChild(el("h2", null, "Ready to submit"));
+      po.appendChild(el("p", null, "You have completed every section. Submit to record your response. You can submit once from this device."));
+      var ao = el("div", "done-actions");
+      var subo = el("button", "btn btn-primary", "Submit responses"); subo.type = "button";
+      subo.addEventListener("click", function () {
+        subo.disabled = true; subo.textContent = "Submitting…";
+        submitOpen(function (ok) {
+          if (ok) { markDeviceSubmitted(); DEVICE_BLOCKED = true; renderDone(); }
+          else { subo.disabled = false; subo.textContent = "Submit responses"; showToast("We could not confirm your submission. Please check your connection and try again.", true); }
+        });
+      });
+      ao.appendChild(subo); po.appendChild(ao);
+      v.appendChild(po); topFocus(); return;
+    }
+
+    // recorded (gated/open) or finished local-only
+    var recorded = GATED || (OPEN_SUBMIT && deviceSubmitted());
     var page2 = el("div", "page done");
     page2.appendChild(el("div", "check", "✓"));
     page2.appendChild(el("h2", null, "Thank you!"));
-    page2.appendChild(el("p", null, GATED
+    page2.appendChild(el("p", null, recorded
       ? "Your response has been recorded. Thank you for taking part in this METU study."
       : "All steps are complete. Thank you for taking part in this METU study. You can download your responses below."));
-    var actions = el("div", "done-actions");
-    var dj = el("button", "btn btn-primary", "Download JSON"); dj.type = "button"; dj.addEventListener("click", exportJson);
-    var dc = el("button", "btn btn-ghost", "Download CSV"); dc.type = "button"; dc.addEventListener("click", exportCsv);
-    actions.appendChild(dj); actions.appendChild(dc); page2.appendChild(actions);
+    if (!recorded) {
+      var actions = el("div", "done-actions");
+      var dj = el("button", "btn btn-primary", "Download JSON"); dj.type = "button"; dj.addEventListener("click", exportJson);
+      var dc = el("button", "btn btn-ghost", "Download CSV"); dc.type = "button"; dc.addEventListener("click", exportCsv);
+      actions.appendChild(dj); actions.appendChild(dc); page2.appendChild(actions);
+    }
     v.appendChild(page2); topFocus();
   }
 
@@ -639,6 +676,26 @@
       fetch(CFG.webAppUrl, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ t: TOKEN, payload: payload }) })
         .then(confirm, confirm);
     } catch (e) { confirm(); }
+  }
+  // open mode: POST answers tagged with this device's id, then confirm the row landed (JSONP).
+  function submitOpen(cb) {
+    var d = deviceId();
+    var payload = { background: background(), sections: buildExportSections() };
+    function confirm() { setTimeout(function () { checkOpen(d, cb); }, 1400); }
+    try {
+      fetch(SUBMIT_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ d: d, payload: payload }) })
+        .then(confirm, confirm);
+    } catch (e) { confirm(); }
+  }
+  function checkOpen(d, cb) { jsonp(SUBMIT_URL + "?action=check&d=" + encodeURIComponent(d), function (err, data) { cb(!err && !!data && data.recorded === true); }); }
+  function showDeviceBlocked() {
+    renderStepper(null);
+    var v = clearView();
+    var box = el("div", "page gate");
+    box.appendChild(el("div", "gate-icon ok", "✓"));
+    box.appendChild(el("h2", null, "You have already responded"));
+    box.appendChild(el("p", null, "This device has already submitted a response. Thank you for taking part in this METU study."));
+    v.appendChild(box); topFocus();
   }
   function showGate(kind) {
     renderStepper(null);
@@ -730,6 +787,7 @@
 
   // ---------- render / init ----------
   function render() {
+    if (DEVICE_BLOCKED) { showDeviceBlocked(); return; } // open mode: already submitted from this device
     if (GATED && !ACCESS_OK) return; // hold the survey until a valid link is confirmed
     var route = parseHash();
     if (route.view === "welcome") renderWelcome();
@@ -743,7 +801,10 @@
     if (!SECTIONS.length) { document.getElementById("view").innerHTML = '<p class="page">No survey data found.</p>'; return; }
     window.addEventListener("hashchange", render);
     window.addEventListener("resize", function () { if (cueUpdate) cueUpdate(); });
-    if (GATED) gateCheck(); else { ACCESS_OK = true; render(); }
+    if (GATED) { gateCheck(); return; }
+    ACCESS_OK = true;
+    if (OPEN_SUBMIT && deviceSubmitted()) { DEVICE_BLOCKED = true; showDeviceBlocked(); return; }
+    render();
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();
