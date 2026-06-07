@@ -14,14 +14,18 @@
   "use strict";
 
   var S = window.SURVEY || { meta: {}, scale: { min: 1, max: 5, labels: {} }, intake: [], sections: [], rawSheets: [] };
-  var SECTIONS = S.sections || [];
+  // Two layouts share the SAME data. "standard" (index.html) = one page per section.
+  // "merged" (alternative.html, set via window.SURVEY_VARIANT) = GENERAL stays on its own, the
+  // other four sections collapse into ONE "Applied AI Use" section with a single grouped matrix.
+  var VARIANT = (window.SURVEY_VARIANT === "merged") ? "merged" : "standard";
+  var SECTIONS = (VARIANT === "merged") ? buildMergedSections(S.sections || []) : (S.sections || []);
   var INTAKE = S.intake || [];
   var HAS_INTAKE = INTAKE.length > 0;
   var SCALE = S.scale || { min: 1, max: 5, labels: {} };
   var MIN = SCALE.min || 1, MAX = SCALE.max || 5;
   var FALLBACK_TOOLS = (S.meta && S.meta.aiTools) || [];
   var MAX_TOOLS = 3;
-  var LS_KEY = "utaut_survey_answers_v7";
+  var LS_KEY = "utaut_survey_answers_v8" + (VARIANT === "merged" ? "_alt" : "");
 
   var answers = loadAnswers();
   var STEPS = SECTIONS.map(function (sec, si) { return { index: si, si: si, sec: sec }; });
@@ -58,14 +62,70 @@
     check:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4 4 10-10"/></svg>',
     slash:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.2"/><path d="M8.5 12h7"/></svg>',
     chevron: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>',
-    info:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5h.01"/></svg>'
+    info:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5h.01"/></svg>',
+    lock:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+    layers:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 12l9 5 9-5M3 16.5l9 5 9-5"/></svg>'
   };
   function icon(name) { return ICONS[name] || ""; }
+
+  // tap-to-open info popup (used by the "?" on column headers). Rendered on <body> as a fixed
+  // overlay so it is never clipped by the matrix scroll container — works on mobile and desktop.
+  // turn a "clause; clause; clause" examples string into a tidy bulleted list
+  function buildExamples(text) {
+    var wrap = el("div", "ex-block");
+    wrap.appendChild(el("span", "ex-lead", "For example:"));
+    var ul = document.createElement("ul"); ul.className = "ex-list";
+    String(text || "").split(";").forEach(function (part) {
+      var t = part.trim().replace(/^and\s+/i, "").replace(/\s*\.+\s*$/, "");
+      if (t) { var li = document.createElement("li"); li.textContent = t; ul.appendChild(li); }
+    });
+    wrap.appendChild(ul);
+    return wrap;
+  }
+  function escClosePopup(e) { if (e.key === "Escape") closeInfoPopup(); }
+  function closeInfoPopup() { var b = document.querySelector(".info-pop-backdrop"); if (b) b.remove(); document.removeEventListener("keydown", escClosePopup); }
+  function showInfoPopup(title, body) {
+    closeInfoPopup();
+    var bd = el("div", "info-pop-backdrop");
+    var card = el("div", "info-pop");
+    card.appendChild(el("p", "info-pop-title", esc(title)));
+    if (body) card.appendChild(buildExamples(body));
+    var close = el("button", "btn btn-primary info-pop-close", "Got it"); close.type = "button";
+    close.addEventListener("click", closeInfoPopup);
+    card.appendChild(close);
+    bd.appendChild(card);
+    bd.addEventListener("click", function (e) { if (e.target === bd) closeInfoPopup(); });
+    document.body.appendChild(bd);
+    document.addEventListener("keydown", escClosePopup);
+    close.focus();
+  }
   var SECTION_ICONS = {
     general: "globe", learning_brainstorming: "bulb", problem_solving: "puzzle",
-    reporting_presentation_organization: "doc", data_processing_coding: "code"
+    reporting_presentation_organization: "doc", data_processing_coding: "code",
+    applied: "layers"
   };
   function sectionIcon(sec) { return icon(SECTION_ICONS[sec.slug] || "globe"); }
+
+  // "merged" variant: keep GENERAL as-is, fold the other four sections into one section whose
+  // columns are every sub-area (each tagged with its source section name as `group`). Statements
+  // are the GENERAL (un-domain-named) wording, since one row now spans tasks from four areas.
+  // Otherwise it is a perfectly normal section, so all completion/tools/gating logic just works.
+  function buildMergedSections(secs) {
+    if (!secs || secs.length <= 1) return secs || [];
+    var general = secs[0], applied = secs.slice(1), cols = [], tools = [];
+    applied.forEach(function (sec) {
+      (sec.columns || []).forEach(function (col) {
+        cols.push({ id: sec.slug + "__" + col.id, label: col.label, examples: col.examples, group: sec.name });
+      });
+      (sec.aiTools || []).forEach(function (t) { if (tools.indexOf(t) < 0) tools.push(t); });
+    });
+    var merged = {
+      id: "sec_applied", slug: "applied", name: "Applied AI Use",
+      description: "These four task areas are combined here. Tick each task you use AI for, then rate the statements. Tasks are grouped by area.",
+      aiTools: tools, columns: cols, groups: general.groups, grouped: true
+    };
+    return [general, merged];
+  }
 
   // ---------- helpers ----------
   function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
@@ -110,6 +170,10 @@
   function totalSteps() { return (HAS_INTAKE ? 1 : 0) + SECTIONS.length; }
   function completedSteps() { return (HAS_INTAKE ? (aboutComplete() ? 1 : 0) : 0) + completedSections(); }
   function firstIncompleteStep() { for (var i = 0; i < STEPS.length; i++) if (!sectionComplete(STEPS[i].sec)) return STEPS[i]; return null; }
+  // Sequential gating: a section is reachable only once About and every earlier section are done.
+  // Completed sections stay reachable (so the participant can go back and review/edit).
+  function frontierIndex() { var st = firstIncompleteStep(); return st ? st.index : STEPS.length; }
+  function stepReachable(step) { return aboutComplete() && step.index <= frontierIndex(); }
   function startHash() { if (HAS_INTAKE && !aboutComplete()) return "#about"; var st = firstIncompleteStep(); return st ? stepHash(st) : (STEPS[0] ? stepHash(STEPS[0]) : "#about"); }
 
   // ---------- routing ----------
@@ -146,24 +210,29 @@
     document.getElementById("progressText").textContent = shown + " / " + total;
   }
   function refreshStepper() {
-    document.querySelectorAll(".stepper .step").forEach(function (stepEl) {
-      var kind = stepEl.getAttribute("data-kind");
-      var complete = kind === "about" ? aboutComplete() : sectionComplete(SECTIONS[+stepEl.getAttribute("data-si")]);
-      stepEl.classList.toggle("done", complete);
-      var dot = stepEl.querySelector(".step-dot");
-      if (dot && !stepEl.classList.contains("active")) dot.textContent = complete ? "✓" : (kind === "about" ? "i" : "" + (+stepEl.getAttribute("data-si") + 1));
-    });
+    var nav = document.getElementById("stepper");
+    if (!nav || nav.hidden) return;
+    // Re-render so done/locked state + icons stay consistent (e.g. completing the current
+    // section unlocks the next). Cheap, and it does not touch the matrix, so radio focus is kept.
+    var route = parseHash();
+    var activeKey = route.view === "about" ? "about" : (route.view === "step" ? route.step.index : null);
+    renderStepper(activeKey);
   }
 
   // ---------- stepper ----------
   function stepperPill(opts) {
-    var step = el("div", "step" + (opts.active ? " active" : "") + (opts.done ? " done" : ""));
+    var step = el("div", "step" + (opts.active ? " active" : "") + (opts.done ? " done" : "") + (opts.locked ? " locked" : ""));
     step.setAttribute("data-kind", opts.kind);
     if (opts.kind === "section") step.setAttribute("data-si", opts.si);
     var btn = el("button", "step-btn"); btn.type = "button";
-    btn.appendChild(el("span", "step-dot", opts.done && !opts.active ? "✓" : opts.dot));
+    var dotHtml = opts.done && !opts.active ? "✓" : (opts.locked ? icon("lock") : opts.dot);
+    btn.appendChild(el("span", "step-dot", dotHtml));
     btn.appendChild(el("span", "step-label", esc(opts.label)));
-    btn.addEventListener("click", opts.onClick);
+    if (opts.locked) btn.setAttribute("aria-disabled", "true");
+    btn.addEventListener("click", function () {
+      if (opts.locked) { showToast("Please finish the current section before moving on.", true); return; }
+      opts.onClick();
+    });
     step.appendChild(btn); step.appendChild(el("span", "step-line"));
     return step;
   }
@@ -173,7 +242,7 @@
     nav.hidden = false; nav.innerHTML = "";
     var inner = el("div", "stepper-inner");
     if (HAS_INTAKE) inner.appendChild(stepperPill({ kind: "about", dot: "i", label: "About you", active: activeKey === "about", done: aboutComplete(), onClick: function () { go("#about"); } }));
-    SECTIONS.forEach(function (sec, si) { inner.appendChild(stepperPill({ kind: "section", si: si, dot: "" + (si + 1), label: sec.name, active: activeKey === si, done: sectionComplete(sec), onClick: function () { go("#" + sec.slug); } })); });
+    SECTIONS.forEach(function (sec, si) { inner.appendChild(stepperPill({ kind: "section", si: si, dot: "" + (si + 1), label: sec.name, active: activeKey === si, done: sectionComplete(sec), locked: activeKey !== si && !stepReachable(STEPS[si]), onClick: function () { go("#" + sec.slug); } })); });
     nav.appendChild(inner);
   }
 
@@ -242,6 +311,8 @@
     var v = clearView();
     var page = el("div", "page welcome");
     var hero = el("div", "hero-card");
+    var logo = el("img", "hero-logo"); logo.src = "assets/metu-logo.svg?v=26"; logo.alt = "METU"; logo.width = 471; logo.height = 398;
+    hero.appendChild(logo);
     hero.appendChild(el("p", "eyebrow", esc((S.meta && S.meta.org) || "Academic Research Survey")));
     hero.appendChild(el("h1", null, esc((S.meta && S.meta.title) || "AI Use Survey")));
     if (S.meta && S.meta.intro) hero.appendChild(el("p", "welcome-sub", esc(S.meta.intro)));
@@ -254,6 +325,10 @@
     begin.addEventListener("click", function () { go(startHash()); });
     actions.appendChild(begin);
     actions.appendChild(el("span", "save-hint", "Your answers are saved automatically in this browser."));
+    var alt = document.createElement("a"); alt.className = "variant-link";
+    alt.href = (VARIANT === "merged") ? "index.html" : "alternative.html";
+    alt.textContent = (VARIANT === "merged") ? "Switch to the standard layout" : "Try the alternative (combined) layout";
+    actions.appendChild(alt);
     page.appendChild(actions);
     v.appendChild(page); topFocus();
   }
@@ -339,8 +414,17 @@
     var q = el("p", "usagepicker-q", "Which of these tasks do you use AI for?");
     q.appendChild(el("span", "usagepicker-hint", "Select all that apply. Leave a task unticked if you do not use AI for it."));
     block.appendChild(q);
-    var list = el("div", "usage-list");
-    (sec.columns || []).forEach(function (col) { list.appendChild(renderUsageItem(sec, col)); });
+    var list = el("div", "usage-list" + (sec.grouped ? " grouped" : ""));
+    if (sec.grouped) {
+      var order = [], byGroup = {};
+      (sec.columns || []).forEach(function (col) { if (!byGroup[col.group]) { byGroup[col.group] = []; order.push(col.group); } byGroup[col.group].push(col); });
+      order.forEach(function (gname, gi) {
+        list.appendChild(el("div", "usage-grouphdr cgrp-" + (gi % 6), esc(gname)));
+        byGroup[gname].forEach(function (col) { list.appendChild(renderUsageItem(sec, col)); });
+      });
+    } else {
+      (sec.columns || []).forEach(function (col) { list.appendChild(renderUsageItem(sec, col)); });
+    }
     list.appendChild(renderNoneItem(sec));
     block.appendChild(list);
     host.appendChild(block);
@@ -356,10 +440,18 @@
     nameRow.appendChild(el("span", "usage-name", esc(col.label)));
     if (done) nameRow.appendChild(el("span", "usage-badge done", icon("check") + "<span>Done</span>"));
     body.appendChild(nameRow);
-    if (col.examples) body.appendChild(el("span", "usage-ex", '<span class="ex-lead">For example:</span> ' + esc(col.examples) + "."));
     toggle.appendChild(body);
     toggle.addEventListener("click", function () { toggleTaskUsed(sec, col); });
     item.appendChild(toggle);
+    // expandable "what does this cover?" details, OUTSIDE the toggle button (a <details> inside a
+    // <button> is invalid). Collapsed by default to keep the list tidy.
+    if (col.examples) {
+      var det = document.createElement("details"); det.className = "usage-ex-det"; det.open = true;
+      var sum = document.createElement("summary"); sum.className = "usage-ex-sum"; sum.textContent = "What does this cover?";
+      det.appendChild(sum);
+      det.appendChild(buildExamples(col.examples));
+      item.appendChild(det);
+    }
     return item;
   }
   function noneSelected(sec) {
@@ -447,34 +539,79 @@
     var cols = sec.columns || [];
     if (!cols.length) return;
     host.appendChild(el("p", "matrix-lead", "Rate each statement (1 = " + esc(scaleLabel(MIN)) + ", " + MAX + " = " + esc(scaleLabel(MAX)) + "). Greyed columns are tasks you have not selected above."));
+    // category colour-coding (grouped/merged matrix): each category gets an index used for a
+    // pastel band + a coloured separator at the column where a new category begins.
+    var groupOrder = [];
+    cols.forEach(function (c) { if (c.group && groupOrder.indexOf(c.group) < 0) groupOrder.push(c.group); });
+    // colour index: grouped (v2) shares a colour per category; ungrouped (v1) colours each column
+    // by its position. gstart marks where a new category begins (grouped only).
+    (function () { var prev = null; cols.forEach(function (c, i) { c.__gi = (c.group ? groupOrder.indexOf(c.group) : i) % 6; c.__gstart = !!(c.group && c.group !== prev); prev = c.group || null; }); })();
+    function grpCls(col) { return " cgrp-" + col.__gi + (col.__gstart ? " gstart" : ""); }
     var wrap = el("div", "matrix-wrap");
     var scroll = el("div", "matrix-scroll");
-    var table = el("table", "matrix");
+    var table = el("table", "matrix" + (sec.grouped ? " grouped" : ""));
     var thead = document.createElement("thead");
-    var tr = document.createElement("tr");
-    tr.appendChild(el("th", "corner", "Statement"));
-    cols.forEach(function (col) {
+    function colHeadCell(col) {
       var u = usageOf(sec, col), active = u === "yes";
-      var th = el("th", "colhead" + (active ? "" : " locked"));
-      if (col.examples) th.setAttribute("title", col.label + ". For example: " + col.examples);
+      var th = el("th", "colhead" + (active ? "" : " locked") + grpCls(col));
       th.appendChild(el("span", "colhead-label", esc(col.label)));
+      if (col.examples) {
+        var hb = el("button", "colhelp", "?"); hb.type = "button"; hb.setAttribute("aria-label", "What " + col.label + " covers");
+        hb.addEventListener("click", function (e) { e.stopPropagation(); showInfoPopup(col.label, col.examples); });
+        th.appendChild(hb);
+      }
       if (!active) th.appendChild(el("span", "colhead-note", u === "no" ? "Skipped" : "Select above"));
-      tr.appendChild(th);
-    });
-    thead.appendChild(tr); table.appendChild(thead);
-    var tbody = document.createElement("tbody");
-    questionsOf(sec).forEach(function (q) {
-      var rtr = el("tr", "qrow");
-      rtr.appendChild(el("th", "qcell", esc(q.text || "")));
-      cols.forEach(function (col) {
-        var active = usageOf(sec, col) === "yes";
-        var td = el("td", "answer" + (active ? "" : " locked")); td.setAttribute("data-key", keyOf(sec.id, q.id, col.id));
-        var ns = buildNumberScale(sec.id, q.id, col.id);
-        if (!active) ns.querySelectorAll("input").forEach(function (inp) { inp.disabled = true; });
-        td.appendChild(ns);
-        rtr.appendChild(td);
+      return th;
+    }
+    if (sec.grouped) {
+      // two-level header: category band (row 1, spanning its sub-areas) + sub-area labels (row 2)
+      var order = [], cnt = {};
+      cols.forEach(function (c) { if (cnt[c.group] === undefined) { order.push(c.group); cnt[c.group] = 0; } cnt[c.group]++; });
+      var gtr = document.createElement("tr"); gtr.className = "grouprow";
+      var corner = el("th", "corner", "Statement"); corner.rowSpan = 2; gtr.appendChild(corner);
+      order.forEach(function (gname) {
+        var gth = el("th", "grouphead cgrp-" + (groupOrder.indexOf(gname) % 6)); gth.colSpan = cnt[gname];
+        gth.appendChild(el("span", "grouphead-label", esc(gname)));
+        gtr.appendChild(gth);
       });
-      tbody.appendChild(rtr);
+      thead.appendChild(gtr);
+      var str = document.createElement("tr");
+      cols.forEach(function (col) { str.appendChild(colHeadCell(col)); });
+      thead.appendChild(str);
+    } else {
+      var tr = document.createElement("tr");
+      tr.appendChild(el("th", "corner", "Statement"));
+      cols.forEach(function (col) { tr.appendChild(colHeadCell(col)); });
+      thead.appendChild(tr);
+    }
+    table.appendChild(thead);
+    var tbody = document.createElement("tbody");
+    var ci = -1;
+    (sec.groups || []).forEach(function (g) {
+      ci++;
+      var qg = " qg-" + (ci % 6);
+      (g.questions || []).forEach(function (q, qi) {
+        var first = qi === 0;
+        var rtr = el("tr", "qrow" + (first ? " cgstart" : ""));
+        var qcell = el("th", "qcell" + qg + (first ? " qgstart" : ""));
+        if (first) {
+          var gh = el("div", "qgroup");
+          gh.appendChild(el("span", "qgroup-title", esc(g.title || g.name || "")));
+          if (g.help) gh.appendChild(el("span", "qgroup-help", esc(g.help)));
+          qcell.appendChild(gh);
+        }
+        qcell.appendChild(el("span", "qtext", esc(q.text || "")));
+        rtr.appendChild(qcell);
+        cols.forEach(function (col) {
+          var active = usageOf(sec, col) === "yes";
+          var td = el("td", "answer" + (active ? "" : " locked") + grpCls(col)); td.setAttribute("data-key", keyOf(sec.id, q.id, col.id));
+          var ns = buildNumberScale(sec.id, q.id, col.id);
+          if (!active) ns.querySelectorAll("input").forEach(function (inp) { inp.disabled = true; });
+          td.appendChild(ns);
+          rtr.appendChild(td);
+        });
+        tbody.appendChild(rtr);
+      });
     });
     table.appendChild(tbody); scroll.appendChild(table); wrap.appendChild(scroll);
     var cue = el("div", "scroll-cue"); cue.innerHTML = '<span class="cue-pill">Scroll&nbsp;→</span>'; cue.style.display = "none";
@@ -790,6 +927,15 @@
     if (DEVICE_BLOCKED) { showDeviceBlocked(); return; } // open mode: already submitted from this device
     if (GATED && !ACCESS_OK) return; // hold the survey until a valid link is confirmed
     var route = parseHash();
+    // Sequential gating: block deep-linking / jumping past the first unfinished step.
+    if (route.view === "step" && !stepReachable(route.step)) {
+      if (HAS_INTAKE && !aboutComplete()) { go("#about"); return; }
+      var st = firstIncompleteStep(); go(st ? stepHash(st) : "#done"); return;
+    }
+    if (route.view === "done" && completedSteps() !== totalSteps()) {
+      if (HAS_INTAKE && !aboutComplete()) { go("#about"); return; }
+      var st2 = firstIncompleteStep(); go(st2 ? stepHash(st2) : "#welcome"); return;
+    }
     if (route.view === "welcome") renderWelcome();
     else if (route.view === "about") (HAS_INTAKE ? renderAbout() : renderWelcome());
     else if (route.view === "done") renderDone();

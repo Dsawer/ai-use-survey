@@ -50,6 +50,17 @@ window.SURVEY = {
  },
  "intake": [
   {
+   "id": "year",
+   "label": "Which year's courses are you mostly taking?",
+   "options": [
+    "1st year",
+    "2nd year",
+    "3rd year",
+    "4th year",
+    "Postgraduate"
+   ]
+  },
+  {
    "id": "semester",
    "type": "select",
    "label": "Which semester are you in?",
@@ -93,12 +104,12 @@ window.SURVEY = {
     {
      "id": "c0",
      "label": "Academic & Professional Communication",
-     "examples": "writing an email to a professor about a missed deadline, drafting an internship application to a construction firm, writing a cover letter for a summer job, rewording a message to sound more formal, translating a professional email into English"
+     "examples": "writing an email to a professor (a question, an extension or a reminder), a team announcement or status update, a professional message in English; writing up your experience and skills, editing your CV, a cover or motivation letter, a statement of purpose, a research or teaching statement, a scholarship application; generating likely interview questions, drafting answers, rehearsing an English or technical interview, and a self introduction"
     },
     {
      "id": "c1",
      "label": "Non Academic Use / Exploration",
-     "examples": "asking random questions out of curiosity, planning a weekend trip or your monthly budget, getting movie or book recommendations, brainstorming ideas for a personal hobby, looking up everyday facts unrelated to your studies"
+     "examples": "asking questions out of curiosity, planning a trip or your monthly budget, getting movie or book recommendations, brainstorming ideas for a personal hobby, and looking up everyday facts unrelated to your studies"
     }
    ],
    "groups": [
@@ -123,9 +134,11 @@ window.SURVEY = {
       {
        "id": "q4",
        "code": "OE7",
-       "text": "Using AI improves the quality of my academic output."
+       "text": "Using AI increases my chances of gaining additional benefits."
       }
-     ]
+     ],
+     "title": "Usefulness and productivity",
+     "help": "Whether AI helps you get this work done better and faster (more done, higher quality)."
     },
     {
      "name": "Effort Expectancy",
@@ -145,7 +158,9 @@ window.SURVEY = {
        "code": "EOU5",
        "text": "It is easy to become skillful with the AI tools I use."
       }
-     ]
+     ],
+     "title": "Ease of use",
+     "help": "How easy AI is to use and to get good at for this work."
     },
     {
      "name": "Attitude Toward Using AI",
@@ -170,7 +185,9 @@ window.SURVEY = {
        "code": "Affect1",
        "text": "I like working with AI."
       }
-     ]
+     ],
+     "title": "Attitude and enjoyment",
+     "help": "How you feel about using AI here: whether it is a good idea, interesting, and enjoyable."
     },
     {
      "name": "Social Influence",
@@ -190,7 +207,9 @@ window.SURVEY = {
        "code": "SF4",
        "text": "In general, my department or university supports the use of AI."
       }
-     ]
+     ],
+     "title": "What people around you think",
+     "help": "Whether people who matter to you (instructors, classmates, family) think you should use AI."
     },
     {
      "name": "Facilitating Conditions",
@@ -205,7 +224,9 @@ window.SURVEY = {
        "code": "PBC3",
        "text": "I have the knowledge necessary to use AI."
       }
-     ]
+     ],
+     "title": "Resources and support",
+     "help": "Whether you have what you need to use AI: a device, internet, access, the know how, and support."
     },
     {
      "name": "Self Efficacy",
@@ -225,7 +246,9 @@ window.SURVEY = {
        "code": "SE6",
        "text": "I could complete a task using AI if I had a lot of time to complete it."
       }
-     ]
+     ],
+     "title": "Confidence on your own",
+     "help": "How confident you are completing a task with AI by yourself, under different conditions."
     },
     {
      "name": "Anxiety (reverse coded)",
@@ -233,24 +256,26 @@ window.SURVEY = {
       {
        "id": "q20",
        "code": "ANX1",
-       "text": "I feel apprehensive about using AI."
+       "text": "I feel anxious about using AI."
       },
       {
        "id": "q21",
        "code": "ANX3",
-       "text": "I hesitate to use AI for fear of making mistakes that cannot be corrected."
+       "text": "I hesitate to use AI for fear of making mistakes."
       },
       {
        "id": "q22",
        "code": "ANX-add",
-       "text": "I hesitate to use AI for fear of being noticed or questioned for using it (for example, academic integrity concerns)."
+       "text": "I hesitate to use AI for fear of getting recognized for using it."
       },
       {
        "id": "q23",
-       "code": "ANX-prop",
-       "text": "I feel anxious about learning wrong or insufficient information from AI."
+       "code": "ANX4",
+       "text": "AI is somewhat intimidating to me."
       }
-     ]
+     ],
+     "title": "Worries and hesitations",
+     "help": "Worries that hold you back: making mistakes, being noticed for using AI, or feeling intimidated."
     },
     {
      "name": "Behavioral Intention",
@@ -265,7 +290,53 @@ window.SURVEY = {
        "code": "BI2",
        "text": "I predict I will use AI in the coming term."
       }
-     ]
+     ],
+     "title": "Plans to keep using AI",
+     "help": "Whether you intend and expect to keep using AI in the coming term."
+    },
+    {
+     "name": "Trust",
+     "questions": [
+      {
+       "id": "q26",
+       "code": "TR2",
+       "text": "I trust the AI tools to be safe and reliable in tackling complex or difficult tasks."
+      },
+      {
+       "id": "q27",
+       "code": "TR3",
+       "text": "I would trust the problem solving and teaching skills of the AI tools more than the skill of the professors and/or teaching assistants."
+      },
+      {
+       "id": "q28",
+       "code": "TR4",
+       "text": "AI tools can be trusted to carry out tasks safely (without grave errors)."
+      }
+     ],
+     "title": "Trust in AI",
+     "help": "How much you trust AI to be safe, reliable, and capable for this work."
+    },
+    {
+     "name": "Task Technology Fit",
+     "questions": [
+      {
+       "id": "q29",
+       "code": "TTF1",
+       "text": "Using AI fits well with my academic goals and needs."
+      },
+      {
+       "id": "q30",
+       "code": "TTF2",
+       "text": "Using AI fits well with the way I like to enhance my efficiency."
+      },
+      {
+       "id": "q31",
+       "code": "TTF4",
+       "text": "Using AI fits well with all aspects of my academic tasks."
+      }
+     ],
+     "title": "Fit with how you work",
+     "help": "How well AI fits your goals and the way you actually study and work in this area."
     }
    ],
    "extra": [
@@ -321,17 +392,17 @@ window.SURVEY = {
     {
      "id": "c0",
      "label": "Active Learning",
-     "examples": "understanding a tough statics or mechanics concept, asking follow up questions until it clicks, getting a step by step worked solution, having a topic explained in simpler words, practicing with problems the AI quizzes you on"
+     "examples": "having a topic explained from scratch, in simple or technical language, with examples, step by step or as a quick recap; explaining a term, formula, variable, symbol or unit, comparing two concepts, telling apart things that are often confused; building a concept map, making a real life analogy, correcting common misconceptions; and planning how to start a topic, setting prerequisites, ordering what to learn, and a weekly, daily or pre exam study plan"
     },
     {
      "id": "c1",
      "label": "Learning Material Preparation",
-     "examples": "summarizing your own lecture notes or readings, making flashcards for exam terms, building a study guide or formula cheat sheet, turning lecture slides into clean notes, drawing up a concept map of a topic"
+     "examples": "tidying up scattered notes, merging several sources, building a glossary or term list, making flashcards; and summarizing a PDF, slides, lecture notes, a book chapter, an article, a technical report, a regulation or a standard"
     },
     {
      "id": "c2",
      "label": "Research Process",
-     "examples": "finding sources or references for a report, summarizing a journal paper, comparing findings across different studies, brainstorming a project or thesis topic, organizing a literature review"
+     "examples": "suggesting or narrowing a topic, finding a research question, defining the aim and scope, writing the expected contribution; and generating keywords, building a source list, matching Turkish and English search terms, and planning a database search strategy"
     }
    ],
    "groups": [
@@ -356,9 +427,11 @@ window.SURVEY = {
       {
        "id": "q4",
        "code": "OE7",
-       "text": "Using AI for learning and brainstorming improves the quality of my academic output."
+       "text": "Using AI for learning and brainstorming increases my chances of gaining additional benefits."
       }
-     ]
+     ],
+     "title": "Usefulness and productivity",
+     "help": "Whether AI helps you get this work done better and faster (more done, higher quality)."
     },
     {
      "name": "Effort Expectancy",
@@ -378,7 +451,9 @@ window.SURVEY = {
        "code": "EOU5",
        "text": "It is easy to become skillful with the AI tools I use for learning and brainstorming."
       }
-     ]
+     ],
+     "title": "Ease of use",
+     "help": "How easy AI is to use and to get good at for this work."
     },
     {
      "name": "Attitude Toward Using AI",
@@ -403,7 +478,9 @@ window.SURVEY = {
        "code": "Affect1",
        "text": "I like working with AI."
       }
-     ]
+     ],
+     "title": "Attitude and enjoyment",
+     "help": "How you feel about using AI here: whether it is a good idea, interesting, and enjoyable."
     },
     {
      "name": "Social Influence",
@@ -423,7 +500,9 @@ window.SURVEY = {
        "code": "SF4",
        "text": "In general, my department or university supports the use of AI."
       }
-     ]
+     ],
+     "title": "What people around you think",
+     "help": "Whether people who matter to you (instructors, classmates, family) think you should use AI."
     },
     {
      "name": "Facilitating Conditions",
@@ -438,7 +517,9 @@ window.SURVEY = {
        "code": "PBC3",
        "text": "I have the knowledge necessary to use AI."
       }
-     ]
+     ],
+     "title": "Resources and support",
+     "help": "Whether you have what you need to use AI: a device, internet, access, the know how, and support."
     },
     {
      "name": "Self Efficacy",
@@ -458,7 +539,9 @@ window.SURVEY = {
        "code": "SE6",
        "text": "I could complete a task using AI if I had a lot of time to complete it."
       }
-     ]
+     ],
+     "title": "Confidence on your own",
+     "help": "How confident you are completing a task with AI by yourself, under different conditions."
     },
     {
      "name": "Anxiety (reverse coded)",
@@ -466,24 +549,26 @@ window.SURVEY = {
       {
        "id": "q20",
        "code": "ANX1",
-       "text": "I feel apprehensive about using AI."
+       "text": "I feel anxious about using AI."
       },
       {
        "id": "q21",
        "code": "ANX3",
-       "text": "I hesitate to use AI for fear of making mistakes that cannot be corrected."
+       "text": "I hesitate to use AI for fear of making mistakes."
       },
       {
        "id": "q22",
        "code": "ANX-add",
-       "text": "I hesitate to use AI for fear of being noticed or questioned for using it (for example, academic integrity concerns)."
+       "text": "I hesitate to use AI for fear of getting recognized for using it."
       },
       {
        "id": "q23",
-       "code": "ANX-prop",
-       "text": "I feel anxious about learning wrong or insufficient information from AI."
+       "code": "ANX4",
+       "text": "AI is somewhat intimidating to me."
       }
-     ]
+     ],
+     "title": "Worries and hesitations",
+     "help": "Worries that hold you back: making mistakes, being noticed for using AI, or feeling intimidated."
     },
     {
      "name": "Behavioral Intention",
@@ -498,7 +583,53 @@ window.SURVEY = {
        "code": "BI2",
        "text": "I predict I will use AI in the coming term."
       }
-     ]
+     ],
+     "title": "Plans to keep using AI",
+     "help": "Whether you intend and expect to keep using AI in the coming term."
+    },
+    {
+     "name": "Trust",
+     "questions": [
+      {
+       "id": "q26",
+       "code": "TR2",
+       "text": "I trust the AI tools to be safe and reliable in tackling complex or difficult tasks."
+      },
+      {
+       "id": "q27",
+       "code": "TR3",
+       "text": "I would trust the problem solving and teaching skills of the AI tools more than the skill of the professors and/or teaching assistants."
+      },
+      {
+       "id": "q28",
+       "code": "TR4",
+       "text": "AI tools can be trusted to carry out tasks safely (without grave errors)."
+      }
+     ],
+     "title": "Trust in AI",
+     "help": "How much you trust AI to be safe, reliable, and capable for this work."
+    },
+    {
+     "name": "Task Technology Fit",
+     "questions": [
+      {
+       "id": "q29",
+       "code": "TTF1",
+       "text": "Using AI for learning and brainstorming fits well with my goals and needs."
+      },
+      {
+       "id": "q30",
+       "code": "TTF2",
+       "text": "Using AI fits well with the way I like to enhance my efficiency in learning and brainstorming."
+      },
+      {
+       "id": "q31",
+       "code": "TTF4",
+       "text": "Using AI fits well with all aspects of my learning and brainstorming tasks."
+      }
+     ],
+     "title": "Fit with how you work",
+     "help": "How well AI fits your goals and the way you actually study and work in this area."
     }
    ]
   },
@@ -522,12 +653,12 @@ window.SURVEY = {
     {
      "id": "c0",
      "label": "Understanding & Planning Problems (Homework / Self Exercise)",
-     "examples": "figuring out what a homework question is actually asking, deciding which method to use on a statics problem, getting a hint when you are stuck on a beam or truss question, checking whether your free body diagram and equations make sense, walking through a worked example step by step"
+     "examples": "breaking a question into parts, listing what is given and what is asked, drawing out the assumptions, choosing a suitable formula or method; making a solution plan, explaining each step, producing a short or detailed solution, suggesting an alternative method; checking for math, unit, sign or logic errors, spotting a missing step, interpreting the physical meaning of the result; and simplifying the question, listing what to submit, reading a rubric, and drawing up a work plan"
     },
     {
      "id": "c1",
      "label": "Exam Preparation (Self Exercise)",
-     "examples": "solving old midterm and final questions to revise, asking for extra practice problems on a weak topic, quizzing yourself with timed questions to test your readiness, listing which subjects to focus on before the exam, recalling key formulas and when to apply them"
+     "examples": "practicing multiple choice, true or false, fill in the blank, open ended, calculation and case questions at easy, medium or hard difficulty; planning your midterm or final, a last three days plan, finding the most frequently tested topics, spotting your weak areas; and making a formula sheet, a one page review note, a list of common mistakes and flashcards"
     }
    ],
    "groups": [
@@ -552,9 +683,11 @@ window.SURVEY = {
       {
        "id": "q4",
        "code": "OE7",
-       "text": "Using AI for problem solving improves the quality of my academic output."
+       "text": "Using AI for problem solving increases my chances of gaining additional benefits."
       }
-     ]
+     ],
+     "title": "Usefulness and productivity",
+     "help": "Whether AI helps you get this work done better and faster (more done, higher quality)."
     },
     {
      "name": "Effort Expectancy",
@@ -574,7 +707,9 @@ window.SURVEY = {
        "code": "EOU5",
        "text": "It is easy to become skillful with the AI tools I use for problem solving."
       }
-     ]
+     ],
+     "title": "Ease of use",
+     "help": "How easy AI is to use and to get good at for this work."
     },
     {
      "name": "Attitude Toward Using AI",
@@ -599,7 +734,9 @@ window.SURVEY = {
        "code": "Affect1",
        "text": "I like working with AI."
       }
-     ]
+     ],
+     "title": "Attitude and enjoyment",
+     "help": "How you feel about using AI here: whether it is a good idea, interesting, and enjoyable."
     },
     {
      "name": "Social Influence",
@@ -619,7 +756,9 @@ window.SURVEY = {
        "code": "SF4",
        "text": "In general, my department or university supports the use of AI."
       }
-     ]
+     ],
+     "title": "What people around you think",
+     "help": "Whether people who matter to you (instructors, classmates, family) think you should use AI."
     },
     {
      "name": "Facilitating Conditions",
@@ -634,7 +773,9 @@ window.SURVEY = {
        "code": "PBC3",
        "text": "I have the knowledge necessary to use AI."
       }
-     ]
+     ],
+     "title": "Resources and support",
+     "help": "Whether you have what you need to use AI: a device, internet, access, the know how, and support."
     },
     {
      "name": "Self Efficacy",
@@ -654,7 +795,9 @@ window.SURVEY = {
        "code": "SE6",
        "text": "I could complete a task using AI if I had a lot of time to complete it."
       }
-     ]
+     ],
+     "title": "Confidence on your own",
+     "help": "How confident you are completing a task with AI by yourself, under different conditions."
     },
     {
      "name": "Anxiety (reverse coded)",
@@ -662,24 +805,26 @@ window.SURVEY = {
       {
        "id": "q20",
        "code": "ANX1",
-       "text": "I feel apprehensive about using AI."
+       "text": "I feel anxious about using AI."
       },
       {
        "id": "q21",
        "code": "ANX3",
-       "text": "I hesitate to use AI for fear of making mistakes that cannot be corrected."
+       "text": "I hesitate to use AI for fear of making mistakes."
       },
       {
        "id": "q22",
        "code": "ANX-add",
-       "text": "I hesitate to use AI for fear of being noticed or questioned for using it (for example, academic integrity concerns)."
+       "text": "I hesitate to use AI for fear of getting recognized for using it."
       },
       {
        "id": "q23",
-       "code": "ANX-prop",
-       "text": "I feel anxious about learning wrong or insufficient information from AI."
+       "code": "ANX4",
+       "text": "AI is somewhat intimidating to me."
       }
-     ]
+     ],
+     "title": "Worries and hesitations",
+     "help": "Worries that hold you back: making mistakes, being noticed for using AI, or feeling intimidated."
     },
     {
      "name": "Behavioral Intention",
@@ -694,7 +839,53 @@ window.SURVEY = {
        "code": "BI2",
        "text": "I predict I will use AI in the coming term."
       }
-     ]
+     ],
+     "title": "Plans to keep using AI",
+     "help": "Whether you intend and expect to keep using AI in the coming term."
+    },
+    {
+     "name": "Trust",
+     "questions": [
+      {
+       "id": "q26",
+       "code": "TR2",
+       "text": "I trust the AI tools to be safe and reliable in tackling complex or difficult tasks."
+      },
+      {
+       "id": "q27",
+       "code": "TR3",
+       "text": "I would trust the problem solving and teaching skills of the AI tools more than the skill of the professors and/or teaching assistants."
+      },
+      {
+       "id": "q28",
+       "code": "TR4",
+       "text": "AI tools can be trusted to carry out tasks safely (without grave errors)."
+      }
+     ],
+     "title": "Trust in AI",
+     "help": "How much you trust AI to be safe, reliable, and capable for this work."
+    },
+    {
+     "name": "Task Technology Fit",
+     "questions": [
+      {
+       "id": "q29",
+       "code": "TTF1",
+       "text": "Using AI for problem solving fits well with my goals and needs."
+      },
+      {
+       "id": "q30",
+       "code": "TTF2",
+       "text": "Using AI fits well with the way I like to enhance my efficiency in problem solving."
+      },
+      {
+       "id": "q31",
+       "code": "TTF4",
+       "text": "Using AI fits well with all aspects of my problem solving tasks."
+      }
+     ],
+     "title": "Fit with how you work",
+     "help": "How well AI fits your goals and the way you actually study and work in this area."
     }
    ]
   },
@@ -719,27 +910,27 @@ window.SURVEY = {
     {
      "id": "c0",
      "label": "Planning & Drafting (Report/Essay)",
-     "examples": "outlining the sections of a lab or project report, drafting the introduction or conclusion, turning your rough notes into full paragraphs, expanding a short bullet into a proper paragraph, deciding what order to present your results"
+     "examples": "structuring a report (introduction, method, findings, discussion, conclusion), setting headings and subheadings, building the flow of content; and drafting the abstract, introduction, literature review, methodology, results, discussion and conclusion"
     },
     {
      "id": "c1",
      "label": "Quality Checks Before Submission (Report & Pres.)",
-     "examples": "fixing grammar and spelling mistakes, making the wording clearer and easier to read, smoothing the tone of an academic sentence, formatting your references in the required citation style, a final proofread before you hand it in"
+     "examples": "checking spelling, grammar, formatting and citations, matching text with tables and figures, spotting a missing heading, source or calculation step; and improving academic tone, fixing grammar, shortening or strengthening sentences, passive voice, and Turkish to English translation support"
     },
     {
      "id": "c2",
      "label": "Presentation Preparation",
-     "examples": "planning how many slides and what goes on each one, writing the bullet points and speaker notes, condensing a long report into a few slides, deciding what to actually say out loud, practicing answers to questions the instructor might ask"
+     "examples": "writing slide titles and bullet points, turning technical content into presentation language, making a first draft; writing a speaker script or notes, opening, transition and closing lines, generating likely questions, rehearsing out loud, an English script; slide layout, font and colour palette, balancing text and visuals, an academic or corporate style; and splitting into headings, building the flow, dividing slides by time, and splitting parts between speakers"
     },
     {
      "id": "c3",
      "label": "Charts, Diagrams & Visuals (Report & Pres.)",
-     "examples": "making a chart or graph from your data, choosing whether a bar or line chart fits better, sketching a simple diagram or figure for your report, cleaning up a messy plot so it looks clearer, generating an icon or illustration for a slide"
+     "examples": "choosing the right chart type, making a diagram, flow chart, timeline or comparison matrix; and poster titles, section layout, short texts, balancing visuals and text, and design suggestions"
     },
     {
      "id": "c4",
      "label": "Productivity",
-     "examples": "planning a weekly schedule around your deadlines, organizing your tasks and study notes into folders, setting reminders for upcoming submission dates, splitting the work for a group project, tracking who does what so the team stays on schedule"
+     "examples": "merging the different parts you have produced and keeping the language consistent; and a weekly plan, a to do list, a deadline plan, prioritizing, and a schedule for clashing tasks"
     }
    ],
    "groups": [
@@ -764,9 +955,11 @@ window.SURVEY = {
       {
        "id": "q4",
        "code": "OE7",
-       "text": "Using AI for reporting, presentations and organization improves the quality of my academic output."
+       "text": "Using AI for reporting, presentations and organization increases my chances of gaining additional benefits."
       }
-     ]
+     ],
+     "title": "Usefulness and productivity",
+     "help": "Whether AI helps you get this work done better and faster (more done, higher quality)."
     },
     {
      "name": "Effort Expectancy",
@@ -786,7 +979,9 @@ window.SURVEY = {
        "code": "EOU5",
        "text": "It is easy to become skillful with the AI tools I use for reporting, presentations and organization."
       }
-     ]
+     ],
+     "title": "Ease of use",
+     "help": "How easy AI is to use and to get good at for this work."
     },
     {
      "name": "Attitude Toward Using AI",
@@ -811,7 +1006,9 @@ window.SURVEY = {
        "code": "Affect1",
        "text": "I like working with AI."
       }
-     ]
+     ],
+     "title": "Attitude and enjoyment",
+     "help": "How you feel about using AI here: whether it is a good idea, interesting, and enjoyable."
     },
     {
      "name": "Social Influence",
@@ -831,7 +1028,9 @@ window.SURVEY = {
        "code": "SF4",
        "text": "In general, my department or university supports the use of AI."
       }
-     ]
+     ],
+     "title": "What people around you think",
+     "help": "Whether people who matter to you (instructors, classmates, family) think you should use AI."
     },
     {
      "name": "Facilitating Conditions",
@@ -846,7 +1045,9 @@ window.SURVEY = {
        "code": "PBC3",
        "text": "I have the knowledge necessary to use AI."
       }
-     ]
+     ],
+     "title": "Resources and support",
+     "help": "Whether you have what you need to use AI: a device, internet, access, the know how, and support."
     },
     {
      "name": "Self Efficacy",
@@ -866,7 +1067,9 @@ window.SURVEY = {
        "code": "SE6",
        "text": "I could complete a task using AI if I had a lot of time to complete it."
       }
-     ]
+     ],
+     "title": "Confidence on your own",
+     "help": "How confident you are completing a task with AI by yourself, under different conditions."
     },
     {
      "name": "Anxiety (reverse coded)",
@@ -874,24 +1077,26 @@ window.SURVEY = {
       {
        "id": "q20",
        "code": "ANX1",
-       "text": "I feel apprehensive about using AI."
+       "text": "I feel anxious about using AI."
       },
       {
        "id": "q21",
        "code": "ANX3",
-       "text": "I hesitate to use AI for fear of making mistakes that cannot be corrected."
+       "text": "I hesitate to use AI for fear of making mistakes."
       },
       {
        "id": "q22",
        "code": "ANX-add",
-       "text": "I hesitate to use AI for fear of being noticed or questioned for using it (for example, academic integrity concerns)."
+       "text": "I hesitate to use AI for fear of getting recognized for using it."
       },
       {
        "id": "q23",
-       "code": "ANX-prop",
-       "text": "I feel anxious about learning wrong or insufficient information from AI."
+       "code": "ANX4",
+       "text": "AI is somewhat intimidating to me."
       }
-     ]
+     ],
+     "title": "Worries and hesitations",
+     "help": "Worries that hold you back: making mistakes, being noticed for using AI, or feeling intimidated."
     },
     {
      "name": "Behavioral Intention",
@@ -906,7 +1111,53 @@ window.SURVEY = {
        "code": "BI2",
        "text": "I predict I will use AI in the coming term."
       }
-     ]
+     ],
+     "title": "Plans to keep using AI",
+     "help": "Whether you intend and expect to keep using AI in the coming term."
+    },
+    {
+     "name": "Trust",
+     "questions": [
+      {
+       "id": "q26",
+       "code": "TR2",
+       "text": "I trust the AI tools to be safe and reliable in tackling complex or difficult tasks."
+      },
+      {
+       "id": "q27",
+       "code": "TR3",
+       "text": "I would trust the problem solving and teaching skills of the AI tools more than the skill of the professors and/or teaching assistants."
+      },
+      {
+       "id": "q28",
+       "code": "TR4",
+       "text": "AI tools can be trusted to carry out tasks safely (without grave errors)."
+      }
+     ],
+     "title": "Trust in AI",
+     "help": "How much you trust AI to be safe, reliable, and capable for this work."
+    },
+    {
+     "name": "Task Technology Fit",
+     "questions": [
+      {
+       "id": "q29",
+       "code": "TTF1",
+       "text": "Using AI for reporting, presentations and organization fits well with my goals and needs."
+      },
+      {
+       "id": "q30",
+       "code": "TTF2",
+       "text": "Using AI fits well with the way I like to enhance my efficiency in reporting, presentations and organization."
+      },
+      {
+       "id": "q31",
+       "code": "TTF4",
+       "text": "Using AI fits well with all aspects of my reporting, presentations and organization tasks."
+      }
+     ],
+     "title": "Fit with how you work",
+     "help": "How well AI fits your goals and the way you actually study and work in this area."
     }
    ]
   },
@@ -932,22 +1183,22 @@ window.SURVEY = {
     {
      "id": "c0",
      "label": "Data Collection & Processing (Excel & others)",
-     "examples": "cleaning messy lab measurements in Excel, writing a formula to convert units, removing duplicate or wrong readings, organizing survey or sensor data into columns, importing a CSV file of test results"
+     "examples": "deciding what data you need, listing sources, preparing a data template or dictionary, standardizing the input format; and finding missing or duplicate data, fixing format, unit, date or category errors, and standardizing column headers"
     },
     {
      "id": "c1",
      "label": "Data Representation (Excel & others)",
-     "examples": "plotting a stress strain curve in Excel, building a bar chart for a project report, making a pivot table to summarize results, formatting a clean results table, turning concrete test numbers into a graph"
+     "examples": "descriptive statistics, correlation and regression, trend analysis and outliers; and reading charts, tables and results, and styling the results"
     },
     {
      "id": "c2",
      "label": "Code Development & Debugging",
-     "examples": "writing a MATLAB script for a beam calculation, fixing an error in Python code, explaining what a chunk of code does, adding comments to a numerical solver, rewriting code from MATLAB into Python"
+     "examples": "a skeleton, project structure, choosing a language or library, writing a function or algorithm, reading and writing data, plotting code; and explaining an error message, analyzing why it does not work, refactoring, line by line explanation, and adding comments"
     },
     {
      "id": "c3",
      "label": "Code Execution & Output Representation",
-     "examples": "understanding why a script crashed, reading the numbers a program printed out, checking if the computed results look reasonable, interpreting what the output values mean, copying program results into a report"
+     "examples": "putting code output into words, preparing figure or table captions, the method section, and turning results into report sentences"
     }
    ],
    "groups": [
@@ -972,9 +1223,11 @@ window.SURVEY = {
       {
        "id": "q4",
        "code": "OE7",
-       "text": "Using AI for data processing and coding improves the quality of my academic output."
+       "text": "Using AI for data processing and coding increases my chances of gaining additional benefits."
       }
-     ]
+     ],
+     "title": "Usefulness and productivity",
+     "help": "Whether AI helps you get this work done better and faster (more done, higher quality)."
     },
     {
      "name": "Effort Expectancy",
@@ -994,7 +1247,9 @@ window.SURVEY = {
        "code": "EOU5",
        "text": "It is easy to become skillful with the AI tools I use for data processing and coding."
       }
-     ]
+     ],
+     "title": "Ease of use",
+     "help": "How easy AI is to use and to get good at for this work."
     },
     {
      "name": "Attitude Toward Using AI",
@@ -1019,7 +1274,9 @@ window.SURVEY = {
        "code": "Affect1",
        "text": "I like working with AI."
       }
-     ]
+     ],
+     "title": "Attitude and enjoyment",
+     "help": "How you feel about using AI here: whether it is a good idea, interesting, and enjoyable."
     },
     {
      "name": "Social Influence",
@@ -1039,7 +1296,9 @@ window.SURVEY = {
        "code": "SF4",
        "text": "In general, my department or university supports the use of AI."
       }
-     ]
+     ],
+     "title": "What people around you think",
+     "help": "Whether people who matter to you (instructors, classmates, family) think you should use AI."
     },
     {
      "name": "Facilitating Conditions",
@@ -1054,7 +1313,9 @@ window.SURVEY = {
        "code": "PBC3",
        "text": "I have the knowledge necessary to use AI."
       }
-     ]
+     ],
+     "title": "Resources and support",
+     "help": "Whether you have what you need to use AI: a device, internet, access, the know how, and support."
     },
     {
      "name": "Self Efficacy",
@@ -1074,7 +1335,9 @@ window.SURVEY = {
        "code": "SE6",
        "text": "I could complete a task using AI if I had a lot of time to complete it."
       }
-     ]
+     ],
+     "title": "Confidence on your own",
+     "help": "How confident you are completing a task with AI by yourself, under different conditions."
     },
     {
      "name": "Anxiety (reverse coded)",
@@ -1082,24 +1345,26 @@ window.SURVEY = {
       {
        "id": "q20",
        "code": "ANX1",
-       "text": "I feel apprehensive about using AI."
+       "text": "I feel anxious about using AI."
       },
       {
        "id": "q21",
        "code": "ANX3",
-       "text": "I hesitate to use AI for fear of making mistakes that cannot be corrected."
+       "text": "I hesitate to use AI for fear of making mistakes."
       },
       {
        "id": "q22",
        "code": "ANX-add",
-       "text": "I hesitate to use AI for fear of being noticed or questioned for using it (for example, academic integrity concerns)."
+       "text": "I hesitate to use AI for fear of getting recognized for using it."
       },
       {
        "id": "q23",
-       "code": "ANX-prop",
-       "text": "I feel anxious about learning wrong or insufficient information from AI."
+       "code": "ANX4",
+       "text": "AI is somewhat intimidating to me."
       }
-     ]
+     ],
+     "title": "Worries and hesitations",
+     "help": "Worries that hold you back: making mistakes, being noticed for using AI, or feeling intimidated."
     },
     {
      "name": "Behavioral Intention",
@@ -1114,7 +1379,53 @@ window.SURVEY = {
        "code": "BI2",
        "text": "I predict I will use AI in the coming term."
       }
-     ]
+     ],
+     "title": "Plans to keep using AI",
+     "help": "Whether you intend and expect to keep using AI in the coming term."
+    },
+    {
+     "name": "Trust",
+     "questions": [
+      {
+       "id": "q26",
+       "code": "TR2",
+       "text": "I trust the AI tools to be safe and reliable in tackling complex or difficult tasks."
+      },
+      {
+       "id": "q27",
+       "code": "TR3",
+       "text": "I would trust the problem solving and teaching skills of the AI tools more than the skill of the professors and/or teaching assistants."
+      },
+      {
+       "id": "q28",
+       "code": "TR4",
+       "text": "AI tools can be trusted to carry out tasks safely (without grave errors)."
+      }
+     ],
+     "title": "Trust in AI",
+     "help": "How much you trust AI to be safe, reliable, and capable for this work."
+    },
+    {
+     "name": "Task Technology Fit",
+     "questions": [
+      {
+       "id": "q29",
+       "code": "TTF1",
+       "text": "Using AI for data processing and coding fits well with my goals and needs."
+      },
+      {
+       "id": "q30",
+       "code": "TTF2",
+       "text": "Using AI fits well with the way I like to enhance my efficiency in data processing and coding."
+      },
+      {
+       "id": "q31",
+       "code": "TTF4",
+       "text": "Using AI fits well with all aspects of my data processing and coding tasks."
+      }
+     ],
+     "title": "Fit with how you work",
+     "help": "How well AI fits your goals and the way you actually study and work in this area."
     }
    ]
   }

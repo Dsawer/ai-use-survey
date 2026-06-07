@@ -10,6 +10,6 @@
      exactly one response.
    ============================================================ */
 window.SURVEY_CONFIG = {
-  webAppUrl: "",        // paste your Apps Script Web App URL here, e.g. "https://script.google.com/macros/s/AKfycb..../exec"
+  webAppUrl: "https://script.google.com/macros/s/AKfycbyV-l8yNOs7qV9fWBtDKM9gTBXUwjukvEmrdyKGsjVkcOp9qgDu0jWStGwbRCc2HRVI/exec",        // paste your Apps Script Web App URL here, e.g. "https://script.google.com/macros/s/AKfycb..../exec"
   requireToken: false   // false = open collection to your private Google Sheet + per-device lock (no token/Form/email)
 };
